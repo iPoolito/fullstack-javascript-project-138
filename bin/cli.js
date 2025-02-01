@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import downloadPage from '../src/pageLoader.js' // Importa como default
-import { program } from 'commander'
-import path from 'path'
+import { program } from 'commander';
+import path from 'path';
+import downloadPage from '../src/pageLoader.js'; // Importa como default
 
 program
   .version('1.0.0')
@@ -9,22 +9,22 @@ program
   .option('-o, --output [dir]', 'output directory (default: current working directory)', process.cwd())
   .arguments('<url>')
   .action((url, options) => {
-    const outputDir = path.resolve(options.output)
+    const outputDir = path.resolve(options.output);
     downloadPage(url, outputDir)
       .then(({ filepath }) => {
-        console.log(`Page was successfully downloaded into '${filepath}'`)
+        console.log(`Page was successfully downloaded into '${filepath}'`);
       })
-      .catch(error => {
-        console.error(error.message)
-        process.exit(1)
-      })
-  })
+      .catch((error) => {
+        console.error(error.message);
+        process.exit(1);
+      });
+  });
 
 program.on('--help', () => {
-  console.log('')
-  console.log('Example usage:')
-  console.log('  $ page-loader -o ./output https://example.com')
-  console.log('')
-})
+  console.log('');
+  console.log('Example usage:');
+  console.log('  $ page-loader -o ./output https://example.com');
+  console.log('');
+});
 
-program.parse(process.argv)
+program.parse(process.argv);

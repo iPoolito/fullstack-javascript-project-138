@@ -62,7 +62,8 @@ const downloadPage = async (pageUrl, outputDirName) => {
   const promise = axios
     .get(pageUrl)
     .then(response => {
-      const { html } = response.data
+      const html = response.data
+      log(`✅ HTML: ${html}`)
       const $ = cheerio.load(html, { decodeEntities: false })
       data = processResources($, pageUrl, fullOutputAssetsDirname)
       return fs.access(fullOutputAssetsDirname).catch(() => fs.mkdir(fullOutputAssetsDirname))

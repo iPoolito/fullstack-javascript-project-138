@@ -92,7 +92,7 @@ const downloadPage = async (pageUrl, outputDirName = '') => {
     })
     .catch(error => {
       log(`❌ Error downloading page: ${error.message}`)
-      return Promise.reject(error)
+      throw error
     })
   return promise
 }

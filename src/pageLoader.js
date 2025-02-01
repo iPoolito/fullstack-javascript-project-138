@@ -9,51 +9,6 @@ import { urlToFilename, urlToDirname, getExtension, sanitizeOutputDir } from './
 
 const log = debug('page-loader')
 
-// 🔹 Función para manejar reintentos en solicitudes HTTP
-const fetchWithRetry = async (url, retries = 2, delay = 3000) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await axios.get(url, {
-        timeout: 5000,
-        responseType: 'arraybuffer', // 🔹 Asegura descargas de archivos binarios sin corrupción
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-          Accept: '*/*'
-        }
-      })
-
-      return response // ✅ Devuelve la respuesta si la solicitud es exitosa
-    } catch (error) {
-      if (error.code === 'ENOTFOUND') {
-        throw new Error(`❌ URL no encontrada: ${url} (${error.code})`)
-      }
-
-      if (error.response) {
-        const status = error.response.status
-        if (status === 404) throw new Error(`❌ Error 404: Página no encontrada (${url})`)
-        if (status === 500) throw new Error(`❌ Error 500: Error interno del servidor (${url})`)
-      }
-
-      if (i === retries - 1) {
-        throw new Error(`❌ Falló la descarga tras ${retries} intentos: ${url}`)
-      }
-
-      console.warn(`⚠️ Retry ${i + 1}/${retries}: ${url}`)
-      await new Promise(res => setTimeout(res, delay))
-    }
-  }
-}
-
-// 🔹 Verifica si un archivo ya existe
-const fileExists = async filePath => {
-  try {
-    await fs.access(filePath)
-    return true
-  } catch {
-    return false
-  }
-}
-
 // 🔹 Procesa y reemplaza las URLs de recursos dentro del HTML
 const processResource = ($, tagName, attrName, baseUrl, baseDirname, assets) => {
   $(tagName).each((_, element) => {
@@ -104,7 +59,8 @@ const downloadPage = async (pageUrl, outputDirName) => {
   const fullOutputAssetsDirname = path.join(fullOutputDirname, assetsDirname)
 
   let data
-  const promise = fetchWithRetry(pageUrl)
+  const promise = axios
+    .get(pageUrl)
     .then(response => {
       const { html } = response.data
       const $ = cheerio.load(html, { decodeEntities: false })

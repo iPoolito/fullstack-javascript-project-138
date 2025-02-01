@@ -11,8 +11,13 @@ program
   .action((url, options) => {
     const outputDir = path.resolve(options.output)
     downloadPage(url, outputDir)
-      .then(filePath => console.log(`Page was successfully downloaded into '${filePath}'`))
-      .catch(err => console.error(`Error: ${err.message}`))
+      .then(({ filepath }) => {
+        console.log(`Page was successfully downloaded into '${filepath}'`)
+      })
+      .catch(error => {
+        console.error(error.message)
+        process.exit(1)
+      })
   })
 
 program.on('--help', () => {

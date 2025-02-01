@@ -1,0 +1,6 @@
+node_modules/
+dist/
+coverage/
+temp-test-dir/
+temp/
+__fixtures__/output

@@ -68,6 +68,7 @@ const downloadPage = async (pageUrl, outputDirName = '') => {
       const html = response.data
 
       data = processResources(url.origin, assetsDirname, html)
+      log('create (if not exists) directory for assets', fullOutputAssetsDirname)
       return fs.access(fullOutputAssetsDirname).catch(() => fs.mkdir(fullOutputAssetsDirname))
     })
     .then(() => {
@@ -90,10 +91,7 @@ const downloadPage = async (pageUrl, outputDirName = '') => {
       log(`🎉 File successfully saved at: ${fullOutputFilename}`)
       return { filepath: fullOutputFilename }
     })
-    .catch(error => {
-      log(`❌ Error downloading page: ${error.message}`)
-      throw error
-    })
+  log('WHAT I RETURN AS PROMISE', promise)
   return promise
 }
 

@@ -4,6 +4,7 @@ import { promises as fs } from 'fs'
 import { URL } from 'url'
 import * as cheerio from 'cheerio'
 import debug from 'debug'
+import _ from 'lodash'
 import { Listr } from 'listr2'
 import { urlToFilename, urlToDirname, getExtension, sanitizeOutputDir } from './utils.js'
 

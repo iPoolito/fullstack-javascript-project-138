@@ -89,55 +89,49 @@ const processResources = ($, baseUrl, baseDirname) => {
 
 // 🔹 Función principal para descargar una página
 const downloadPage = async (pageUrl, outputDirName) => {
-  try {
-    outputDirName = sanitizeOutputDir(outputDirName)
+  outputDirName = sanitizeOutputDir(outputDirName)
 
-    log('url', pageUrl)
-    log('output', outputDirName)
+  log('url', pageUrl)
+  log('output', outputDirName)
 
-    const url = new URL(pageUrl)
-    const slug = `${url.hostname}${url.pathname}`
-    const filename = urlToFilename(slug)
-    const fullOutputDirname = path.resolve(process.cwd(), outputDirName)
-    const extension = getExtension(filename) === '.html' ? '' : '.html'
-    const fullOutputFilename = path.join(fullOutputDirname, `${filename}${extension}`)
-    const assetsDirname = urlToDirname(slug)
-    const fullOutputAssetsDirname = path.join(fullOutputDirname, assetsDirname)
+  const url = new URL(pageUrl)
+  const slug = `${url.hostname}${url.pathname}`
+  const filename = urlToFilename(slug)
+  const fullOutputDirname = path.resolve(process.cwd(), outputDirName)
+  const extension = getExtension(filename) === '.html' ? '' : '.html'
+  const fullOutputFilename = path.join(fullOutputDirname, `${filename}${extension}`)
+  const assetsDirname = urlToDirname(slug)
+  const fullOutputAssetsDirname = path.join(fullOutputDirname, assetsDirname)
 
-    await fs.mkdir(fullOutputDirname, { recursive: true })
-
-    if (await fileExists(fullOutputFilename)) {
-      throw new Error(`❌ Conflicto: ${fullOutputFilename} ya existe como archivo.`)
-    }
-
-    await fs.mkdir(fullOutputAssetsDirname, { recursive: true })
-
-    const { data: html } = await fetchWithRetry(pageUrl)
-    const $ = cheerio.load(html, { decodeEntities: false })
-    const { html: updatedHtml, assets } = processResources($, pageUrl, fullOutputAssetsDirname)
-
-    await fs.writeFile(fullOutputFilename, updatedHtml)
-    log(`✅ HTML saved: ${fullOutputFilename}`)
-
-    const tasks = new Listr(
-      assets.map(({ url, filename }) => ({
-        title: `Downloading resource: ${url.href}`,
-        task: async () => {
-          const resourcePath = path.join(fullOutputAssetsDirname, filename)
-          const { data } = await fetchWithRetry(url.href)
-          await fs.writeFile(resourcePath, data)
+  let data
+  const promise = fetchWithRetry(pageUrl)
+    .then(response => {
+      const { html } = response.data
+      const $ = cheerio.load(html, { decodeEntities: false })
+      data = processResources($, pageUrl, fullOutputAssetsDirname)
+      return fs.access(fullOutputAssetsDirname).catch(() => fs.mkdir(fullOutputAssetsDirname))
+    })
+    .then(() => {
+      log(`✅ HTML saved: ${fullOutputFilename}`)
+      return fs.writeFile(fullOutputFilename, data.html)
+    })
+    .then(() => {
+      const tasks = data.assets.map(asset => {
+        log('asset', asset.url.toString(), asset.filename)
+        return {
+          title: asset.url.toString(),
+          task: () => downloadAsset(fullOutputAssetsDirname, asset).catch(_.noop)
         }
-      })),
-      { concurrent: 5 }
-    )
-
-    await tasks.run()
-    log(`🎉 File successfully saved at: ${fullOutputFilename}`)
-    return fullOutputFilename
-  } catch (error) {
-    console.error(error.message)
-    throw error // ✅ Lanza el error en lugar de solo loguearlo
-  }
+      })
+      // ¡Descargamos en paralelo!
+      const listr = new Listr(tasks, { concurrent: true })
+      return listr.run()
+    })
+    .then(() => {
+      log(`🎉 File successfully saved at: ${fullOutputFilename}`)
+      return { filepath: fullOutputFilename }
+    })
+  return promise
 }
 
 export default downloadPage

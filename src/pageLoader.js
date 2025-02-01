@@ -11,28 +11,24 @@ const log = debug('page-loader')
 
 // 🔹 Procesa y reemplaza las URLs de recursos dentro del HTML
 const processResource = ($, tagName, attrName, baseUrl, baseDirname, assets) => {
-  $(tagName).each((_, element) => {
-    const $element = $(element)
-    const attrValue = $element.attr(attrName)
+  const $elements = $(tagName).toArray()
+  const elementsWithUrls = $elements
+    .map(element => $(element))
+    .filter($element => $element.attr(attrName))
+    .map($element => ({ $element, url: new URL($element.attr(attrName), baseUrl) }))
+    .filter(({ url }) => url.origin === baseUrl)
 
-    if (!attrValue) return
-
-    const url = new URL(attrValue, baseUrl)
-
-    // Solo procesar recursos que sean del mismo dominio
-    if (url.origin !== baseUrl) return
-
+  elementsWithUrls.forEach(({ $element, url }) => {
     const slug = urlToFilename(`${url.hostname}${url.pathname}`)
     const filepath = path.join(baseDirname, slug)
     assets.push({ url, filename: slug })
-
-    // Actualizar el atributo con la nueva ruta del archivo
     $element.attr(attrName, filepath)
   })
 }
 
 // 🔹 Obtiene y procesa todos los recursos del HTML
-const processResources = ($, baseUrl, baseDirname) => {
+const processResources = (baseUrl, baseDirname, html) => {
+  const $ = cheerio.load(html, { decodeEntities: false })
   const assets = []
 
   processResource($, 'img', 'src', baseUrl, baseDirname, assets)
@@ -69,8 +65,8 @@ const downloadPage = async (pageUrl, outputDirName) => {
     .get(pageUrl)
     .then(response => {
       const html = response.data
-      const $ = cheerio.load(html, { decodeEntities: false })
-      data = processResources($, pageUrl, fullOutputAssetsDirname)
+
+      data = processResources(url.origin, assetsDirname, html)
       return fs.access(fullOutputAssetsDirname).catch(() => fs.mkdir(fullOutputAssetsDirname))
     })
     .then(() => {
@@ -85,7 +81,7 @@ const downloadPage = async (pageUrl, outputDirName) => {
           task: () => downloadAsset(fullOutputAssetsDirname, asset).catch(_.noop)
         }
       })
-      // ¡Descargamos en paralelo!
+
       const listr = new Listr(tasks, { concurrent: true })
       return listr.run()
     })

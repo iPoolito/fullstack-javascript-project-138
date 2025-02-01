@@ -46,7 +46,7 @@ const downloadAsset = (dirname, { url, filename }) =>
   })
 
 // 🔹 Función principal para descargar una página
-const downloadPage = async (pageUrl, outputDirName) => {
+const downloadPage = async (pageUrl, outputDirName = '') => {
   outputDirName = sanitizeOutputDir(outputDirName)
 
   log('url', pageUrl)

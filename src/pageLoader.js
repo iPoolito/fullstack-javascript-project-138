@@ -36,8 +36,8 @@ const processResources = ($, baseUrl, baseDirname) => {
   const assets = []
 
   processResource($, 'img', 'src', baseUrl, baseDirname, assets)
-  processResource($, 'link[rel="stylesheet"]', 'href', baseUrl, baseDirname, assets)
-  processResource($, 'script[src]', 'src', baseUrl, baseDirname, assets)
+  processResource($, 'link', 'href', baseUrl, baseDirname, assets)
+  processResource($, 'script', 'src', baseUrl, baseDirname, assets)
 
   return { html: $.html(), assets }
 }
@@ -69,7 +69,6 @@ const downloadPage = async (pageUrl, outputDirName) => {
     .get(pageUrl)
     .then(response => {
       const html = response.data
-      log(`✅ HTML: ${html}`)
       const $ = cheerio.load(html, { decodeEntities: false })
       data = processResources($, pageUrl, fullOutputAssetsDirname)
       return fs.access(fullOutputAssetsDirname).catch(() => fs.mkdir(fullOutputAssetsDirname))

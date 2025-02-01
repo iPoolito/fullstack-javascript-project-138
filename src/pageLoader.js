@@ -90,6 +90,10 @@ const downloadPage = async (pageUrl, outputDirName = '') => {
       log(`🎉 File successfully saved at: ${fullOutputFilename}`)
       return { filepath: fullOutputFilename }
     })
+    .catch(error => {
+      log(`❌ Error downloading page: ${error.message}`)
+      return Promise.reject(error)
+    })
   return promise
 }
 
